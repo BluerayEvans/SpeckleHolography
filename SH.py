@@ -16,25 +16,43 @@ def halfwidth(fouriertransform):
     return right - left
 
 
-imagearray = plt.imread("Images/6mm circ speckle image.bmp")  # imports the image
-print(imagearray.shape)
-column = imagearray[240, :]
-print(column)
+def main():
+    imagearray = plt.imread("Images/5mm circ speckle image.bmp")  # imports the image
+    print(imagearray.shape)
+    column = imagearray[240, :]
+    print(column)
 
-transformed_column = np.fft.fft(column)
-print(transformed_column)
-transformed_column = np.concatenate((transformed_column[372:], transformed_column[1:372]))
-xvalues = np.arange(0, 744)
-abs_transformed_column = abs(transformed_column)
-print(halfwidth(abs_transformed_column))
-plt.plot(xvalues[1:], abs_transformed_column)
-plt.savefig('Plots/absolute.png', bbox_inches='tight')
-plt.show()
-print(halfwidth(transformed_column * np.conjugate(transformed_column)))
-plt.plot(xvalues[1:], abs(transformed_column * np.conjugate(transformed_column)))
-plt.savefig('Plots/squared.png', bbox_inches='tight')
-plt.show()
-print(halfwidth(abs(transformed_column ** 0.5)))
-plt.plot(xvalues[1:], abs(transformed_column ** 0.5))
-plt.savefig('Plots/rooted.png', bbox_inches='tight')
-plt.show()
+    transformed_column = np.fft.fft(column)
+    print(transformed_column)
+    transformed_column = np.concatenate((transformed_column[372:], transformed_column[1:372]))
+    xvalues = np.arange(0, 744)
+    abs_transformed_column = abs(transformed_column)
+    print(halfwidth(abs_transformed_column))
+    plt.plot(xvalues[1:], abs_transformed_column)
+    plt.savefig('Plots/absolute.png', bbox_inches='tight')
+    plt.show()
+    print(halfwidth(transformed_column * np.conjugate(transformed_column)))
+    plt.plot(xvalues[1:], abs(transformed_column * np.conjugate(transformed_column)))
+    plt.savefig('Plots/squared.png', bbox_inches='tight')
+    plt.show()
+    print(halfwidth(abs(transformed_column ** 0.5)))
+    plt.plot(xvalues[1:], abs(transformed_column ** 0.5))
+    plt.savefig('Plots/rooted.png', bbox_inches='tight')
+    plt.show()
+
+
+def widthlist():
+    """generates list of widths of fourier transform"""
+    widths = []
+    for x in range(5, 14):
+        imagearray = plt.imread("Images/" + str(x) + "mm circ speckle image.bmp")  # imports the image
+        column = imagearray[240, :]
+        transformed_column = np.fft.fft(column)
+        transformed_column = np.concatenate((transformed_column[372:], transformed_column[1:372]))
+        abs_transformed_column = abs(transformed_column) ** 0.5
+        width = halfwidth(abs_transformed_column)
+        widths.append(width)
+    print(widths)
+
+main()
+widthlist()
