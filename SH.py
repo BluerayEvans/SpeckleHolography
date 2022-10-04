@@ -35,7 +35,7 @@ def widthlist():
 
     plt.title('Aperture circumference vs half width max')
     plt.xlabel('Aperture circumference (mm)')
-    plt.ylabel('Half width max (mm)')
+    plt.ylabel('Half width max')
     plt.show()
     return widths
 
@@ -52,15 +52,15 @@ def main():
     abs_transformed_column = (transformed_column * np.conjugate(transformed_column)) ** 0.5
     print(halfwidth(abs_transformed_column))
     plt.plot(xvalues[1:], abs_transformed_column)
-    plt.title('Absolute value fourier transform of 1 column of the image data for circumference: ' + circumference)
-    plt.xlabel('Sensor width (mm)')
-    plt.ylabel('Amplitude')
+    plt.title('Fourier transform of the image data for circumference: ' + circumference)
+    plt.xlabel('')
+    plt.ylabel('')
     plt.savefig('Plots/absolute.png', bbox_inches='tight')
     plt.show()
 
 
 #path = os.listdir("Images\Images3")
-circumference = '6'
+circumference = '8'
 xvalues = np.linspace(0, 2.97, 744)
 main()
 print(widthlist())
