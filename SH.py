@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -27,16 +28,15 @@ def halfwidth(fouriertransform):
 def widthlist():
     """generates list of widths of fourier transform"""
     widths = []
-    for x in range(6, 12):
-        imagearray = plt.imread("Images/Images4/" + str(x) + "mm test 5.bmp")  # imports the image
+    for x in images:
+        imagearray = plt.imread(filepath + x)  # imports the image
         abs_transformed_column = transform_column(imagearray)
         width = halfwidth(abs_transformed_column)
         widths.append(width)
-    x = np.arange(6, 12)
+    x = np.arange(0, len(images))
     a, b = np.polyfit(x, widths, 1)
     plt.scatter(x, widths)
     plt.plot(x, a*x+b)
-
     plt.title('Aperture circumference vs half width max')
     plt.xlabel('Aperture circumference (mm)')
     plt.ylabel('Half width max')
@@ -45,7 +45,7 @@ def widthlist():
 
 
 def main():
-    imagearray = plt.imread("Images/Images4/" + circumference + "mm test 5.bmp")  # imports the image
+    imagearray = plt.imread(filepath + images[-1])  # imports the image
     abs_transformed_column = transform_column(imagearray)
     plt.plot(xvalues[int(deletion*2-1):], abs_transformed_column)
     plt.title('Fourier transform of the image data for circumference: ' + circumference)
@@ -55,11 +55,12 @@ def main():
     plt.show()
 
 
-#path = os.listdir("Images\Images3")
 circumference = '6'
 total_values = 739
 xvalues = np.linspace(-0.5, 0.5, total_values)
-deletion = 15
+deletion = 13
+filepath = "Images/Images4/"
+images = os.listdir(filepath)
 
 main()
-print(widthlist())
+widthlist()
