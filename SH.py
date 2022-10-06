@@ -1,9 +1,13 @@
-import csv
-import os
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from os import listdir
+
+def transform_column(imagearray):
+    column = np.sum((imagearray[:, :]), 0)
+    transformed_column = np.fft.fft(column)
+    half_values = total_values/2
+    transformed_column = np.concatenate((transformed_column[int(half_values):total_values-(deletion-1)], transformed_column[int(deletion):int(half_values)]))
+    abs_transformed_column = abs(np.sqrt(transformed_column * np.conjugate(transformed_column)))
+    return abs_transformed_column
 
 
 def halfwidth(fouriertransform):
@@ -23,15 +27,12 @@ def halfwidth(fouriertransform):
 def widthlist():
     """generates list of widths of fourier transform"""
     widths = []
-    for x in range(1, 5):
-        imagearray = plt.imread("Images/NaughtyPics/" + str(x) + "mm_aperture.bmp")  # imports the image
-        column = np.sum((imagearray[:, :]), 0)
-        transformed_column = np.fft.fft(column)
-        transformed_column = np.concatenate((transformed_column[372:-8], transformed_column[8:372]))
-        abs_transformed_column = np.sqrt(transformed_column * np.conjugate(transformed_column))
+    for x in range(6, 12):
+        imagearray = plt.imread("Images/Images4/" + str(x) + "mm test 5.bmp")  # imports the image
+        abs_transformed_column = transform_column(imagearray)
         width = halfwidth(abs_transformed_column)
         widths.append(width)
-    x = np.array([1, 2, 3, 4, 5])
+    x = np.arange(6, 12)
     a, b = np.polyfit(x, widths, 1)
     plt.scatter(x, widths)
     plt.plot(x, a*x+b)
@@ -44,21 +45,9 @@ def widthlist():
 
 
 def main():
-    imagearray = plt.imread("Images/NaughtyPics/0" + circumference + "mm_aperture.bmp")  # imports the image
-    #print(imagearray.shape)
-    #imagearray = np.array(pd.read_csv('Images/data_result.csv'))
-    column = np.sum((imagearray[:, :]), 0)
-
-    print(column)
-
-    transformed_column = np.fft.fft(column)
-    print(transformed_column)
-    abs_transformed_column2 = (transformed_column * np.conjugate(transformed_column)) ** 0.5
-
-    transformed_column = np.concatenate((transformed_column[640:], transformed_column[1:640]))
-    abs_transformed_column = abs(np.sqrt(transformed_column * np.conjugate(transformed_column)))
-    #print(halfwidth(abs_transformed_column))
-    plt.plot(xvalues[1:], abs_transformed_column)
+    imagearray = plt.imread("Images/Images4/" + circumference + "mm test 5.bmp")  # imports the image
+    abs_transformed_column = transform_column(imagearray)
+    plt.plot(xvalues[int(deletion*2-1):], abs_transformed_column)
     plt.title('Fourier transform of the image data for circumference: ' + circumference)
     plt.xlabel('')
     plt.ylabel('')
@@ -67,9 +56,10 @@ def main():
 
 
 #path = os.listdir("Images\Images3")
-circumference = '1'
-total_values = 1264
+circumference = '6'
+total_values = 739
 xvalues = np.linspace(-0.5, 0.5, total_values)
+deletion = 15
 
 main()
 print(widthlist())
