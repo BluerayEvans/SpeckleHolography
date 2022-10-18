@@ -58,37 +58,9 @@ def practicemain():
     plt.show()
 
 
-def round(mean, image):
-    roundedimage = np.zeros((480, 744))
-    for i, row in enumerate(image):
-        for j, element in enumerate(row):
-            if element > mean:
-                roundedimage[i, j] = 1
-            else:
-                roundedimage[i, j] = 0
-    return roundedimage
-
-
-def colourresolution(rounded1, rounded2):
-    imagewith2 = rounded1 + rounded2
-    for i, row in enumerate(imagewith2):
-        for j, element in enumerate(row):
-            if element == 2:
-                imagewith2[i, j] = 0
-    imagewithout2 = imagewith2
-    return imagewithout2
-
-
-def subtraction(image1, image2):
-    mean = (np.mean(image1) + np.mean(image2)) / 2
-    rounded1, rounded2 = round(mean, image1), round(mean, image2)
-    return colourresolution(rounded1, rounded2)
-
-
 def interferometry():
-    image1 = plt.imread("Images/Interferometry6/espi image set EN 000.bmp")
-    image2 = plt.imread("Images/Interferometry6/espi image set EN 001.bmp")
-    #subtractionimage = subtraction(image1, image2)
+    image1 = np.array(plt.imread("Images/NaughtyPics (SFW)/linefilter3.bmp"), dtype=int)
+    image2 = np.array(plt.imread("Images/NaughtyPics (SFW)/linefilter4.bmp"), dtype=int)
     subtractionimage = np.abs(image1 - image2)
     toimage(subtractionimage).show()
 
