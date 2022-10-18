@@ -59,9 +59,11 @@ def practicemain():
 
 
 def interferometry():
-    image1 = np.array(plt.imread("Images/NaughtyPics (SFW)/linefilter3.bmp"), dtype=int)
-    image2 = np.array(plt.imread("Images/NaughtyPics (SFW)/linefilter4.bmp"), dtype=int)
+    image1 = np.array(plt.imread("Images/Interferometry9/24 000.bmp"), dtype=int)
+    image2 = np.array(plt.imread("Images/Interferometry9/24 090.bmp"), dtype=int)
     subtractionimage = np.abs(image1 - image2)
+    plt.plot(np.sum(subtractionimage, axis=0))
+    plt.show()
     toimage(subtractionimage).show()
 
 
