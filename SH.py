@@ -2,6 +2,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.externals._pilutil import toimage
+from scipy import optimize
 
 
 def transform_column(imagearray):
@@ -37,32 +38,42 @@ def widthlist():
         width = halfwidth(abs_transformed_column)
         widths.append(width)
     x = np.arange(0, len(images))
-    a, b = np.polyfit(x, widths, 1)
+    a, b = np.polyfit(np.delete(x, [1,6,7,8]), np.delete(widths, [1,6,7,8]), 1)
     plt.scatter(x, widths)
     plt.plot(x, a * x + b)
     plt.title('Aperture circumference vs half width max')
     plt.xlabel('Aperture circumference (mm)')
-    plt.ylabel('Half width max')
+    plt.ylabel('Half width max (k value)')
+    plt.ylim(0, 0.2)
     plt.show()
     return widths
 
 
 def practicemain():
-    imagearray = plt.imread(filepath + images[-1])  # imports the image
+    imagearray = plt.imread(filepath + images[-2])  # imports the image
     abs_transformed_column = transform_column(imagearray)
     plt.plot(xvalues[int(deletion * 2 - 1):], abs_transformed_column)
-    plt.title('Fourier transform of the image data for circumference: ' + circumference)
-    plt.xlabel('')
-    plt.ylabel('')
+    plt.title('F.T. of the image data for circumference: ' + images[-2])
+    plt.xlabel('k value')
+    plt.ylabel('Summed intensity along column')
     plt.savefig('Plots/absolute.png', bbox_inches='tight')
     plt.show()
 
+def fit_function(x, a, b, c):
+    return a * np.sin(b*x) + c
 
 def interferometry():
-    image1 = np.array(plt.imread("Images/Interferometry9/24 000.bmp"), dtype=int)
-    image2 = np.array(plt.imread("Images/Interferometry9/24 090.bmp"), dtype=int)
+    image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)
+    image2 = np.array(plt.imread("Images/Interferometry10/25 020.bmp"), dtype=int)
     subtractionimage = np.abs(image1 - image2)
-    plt.plot(np.sum(subtractionimage, axis=0))
+    summed_image = np.sum(subtractionimage, axis=0)
+    params, params_cov = optimize.curve_fit(fit_function, np.arange(0, 744), summed_image, p0=[max(summed_image)-np.mean(summed_image), 1/40, np.mean(summed_image)])
+    plt.scatter(np.arange(0, 744), summed_image)
+    vals = np.arange(0, 744)
+    plt.plot(np.arange(0, 744), fit_function(vals, params[0], params[1], params[2]))
+    plt.title('Intensity values across image for 10° turn')
+    plt.ylabel('Image Column Summed Value')
+    plt.xlabel('Image x coordinate')
     plt.show()
     toimage(subtractionimage).show()
 
@@ -71,7 +82,7 @@ circumference = '6'
 total_values = 739
 xvalues = np.linspace(-0.5, 0.5, total_values)
 deletion = 3
-filepath = "Images/Interferometry1/"
+filepath = "Images/Images4/"
 images = os.listdir(filepath)
 
 # practicemain()
