@@ -64,19 +64,38 @@ def fit_function(x, a, b, c):
 
 def interferometry():
     image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)
-    image2 = np.array(plt.imread("Images/Interferometry10/25 020.bmp"), dtype=int)
+    image2 = np.array(plt.imread("Images/Interferometry10/25 060.bmp"), dtype=int)
     subtractionimage = np.abs(image1 - image2)
     summed_image = np.sum(subtractionimage, axis=0)
-    params, params_cov = optimize.curve_fit(fit_function, np.arange(0, 744), summed_image, p0=[max(summed_image)-np.mean(summed_image), 1/40, np.mean(summed_image)])
     plt.scatter(np.arange(0, 744), summed_image)
-    vals = np.arange(0, 744)
-    plt.plot(np.arange(0, 744), fit_function(vals, params[0], params[1], params[2]))
-    plt.title('Intensity values across image for 10° turn')
-    plt.ylabel('Image Column Summed Value')
-    plt.xlabel('Image x coordinate')
+    plt.show()
+    fft_summed_image = np.fft.fft(summed_image)
+    print(np.argmax(np.abs(fft_summed_image[1:444])))
+    frequency = abs(np.fft.fftfreq(744))
+    plt.plot(frequency[12:], abs(fft_summed_image)[12:])
+    print(np.argmax(np.abs(fft_summed_image[6:372])))
+    print(1/((frequency[12:])[np.argmax(np.abs(fft_summed_image[12:]))]))
+    plt.title('Fourier transform of summed fringes')
+    plt.ylabel('Intensity correlation')
+    plt.xlabel('Spatial frequency (px^-1)')
+    plt.xlim(0, 0.02)
     plt.show()
     toimage(subtractionimage).show()
 
+def wavelengthpermeter():
+    numberoffringes = []
+    image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"))
+    frequency = abs(np.fft.fftfreq(744))
+    degrees = np.arange(1, 9)*10
+    for x in degrees:
+        image2 = np.array(plt.imread("Images/Interferometry10/25 0" + str(x) + ".bmp"))
+        subtractionimage = np.abs(image1 - image2)
+        summed_image = np.sum(subtractionimage, axis=0)
+        fft_summed_image = np.fft.fft(summed_image)
+        fringelength = 1/((frequency[int(x/10):372])[np.argmax(np.abs(fft_summed_image[int(x/10):372]))])
+        numberoffringes.append(744/fringelength)
+    plt.plot(degrees, numberoffringes)
+    plt.show()
 
 circumference = '6'
 total_values = 739
@@ -86,5 +105,6 @@ filepath = "Images/Images4/"
 images = os.listdir(filepath)
 
 # practicemain()
-interferometry()
+#interferometry()
+wavelengthpermeter()
 # widthlist()
