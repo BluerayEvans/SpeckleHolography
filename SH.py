@@ -62,39 +62,49 @@ def practicemain():
 def fit_function(x, a, b, c):
     return a * np.sin(b*x) + c
 
+def pentic(x, a, b, c, d, e):
+    return a*x**4 + b*x**3 + c*x**2 + d*x + e
+
+def normalisation_fit(summed_image):
+    popt, pcov = optimize.curve_fit(pentic, np.arange(0, 744), summed_image)
+    return popt
+
 def interferometry():
     image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)
-    image2 = np.array(plt.imread("Images/Interferometry10/25 060.bmp"), dtype=int)
+    image2 = np.array(plt.imread("Images/Interferometry10/25 080.bmp"), dtype=int)
     subtractionimage = np.abs(image1 - image2)
     summed_image = np.sum(subtractionimage, axis=0)
+    popt = normalisation_fit(summed_image)
     plt.scatter(np.arange(0, 744), summed_image)
+    xvals = np.arange(0,744)
+    plt.plot(xvals, pentic(xvals, popt[0], popt[1], popt[2], popt[3], popt[4]))
     plt.show()
     fft_summed_image = np.fft.fft(summed_image)
-    print(np.argmax(np.abs(fft_summed_image[1:444])))
     frequency = abs(np.fft.fftfreq(744))
     plt.plot(frequency[12:], abs(fft_summed_image)[12:])
-    print(np.argmax(np.abs(fft_summed_image[6:372])))
-    print(1/((frequency[12:])[np.argmax(np.abs(fft_summed_image[12:]))]))
     plt.title('Fourier transform of summed fringes')
     plt.ylabel('Intensity correlation')
     plt.xlabel('Spatial frequency (px^-1)')
-    plt.xlim(0, 0.02)
+    plt.xlim(0, 0.05)
     plt.show()
     toimage(subtractionimage).show()
 
 def wavelengthpermeter():
     numberoffringes = []
-    image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"))
-    frequency = abs(np.fft.fftfreq(744))
+    image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)
+    frequency = np.abs(np.fft.fftfreq(744))
     degrees = np.arange(1, 9)*10
     for x in degrees:
-        image2 = np.array(plt.imread("Images/Interferometry10/25 0" + str(x) + ".bmp"))
+        image2 = np.array(plt.imread("Images/Interferometry10/25 0" + str(x) + ".bmp"), dtype=int)
         subtractionimage = np.abs(image1 - image2)
         summed_image = np.sum(subtractionimage, axis=0)
-        fft_summed_image = np.fft.fft(summed_image)
+        fft_summed_image = np.abs(np.fft.fft(summed_image))
         fringelength = 1/((frequency[int(x/10):372])[np.argmax(np.abs(fft_summed_image[int(x/10):372]))])
         numberoffringes.append(744/fringelength)
-    plt.plot(degrees, numberoffringes)
+    meters_per_degree = 1.167*10**(-7)
+    print(numberoffringes)
+    displacement = degrees * meters_per_degree
+    plt.plot(displacement, numberoffringes)
     plt.show()
 
 circumference = '6'
@@ -105,6 +115,6 @@ filepath = "Images/Images4/"
 images = os.listdir(filepath)
 
 # practicemain()
-#interferometry()
-wavelengthpermeter()
+interferometry()
+#wavelengthpermeter()
 # widthlist()
