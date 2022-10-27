@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.externals._pilutil import toimage
 from scipy import optimize
 
 
@@ -64,8 +63,8 @@ def sin_fit_function(x, a, b, c, d):
     return a * np.sin(b * x + d) + c
 
 
-def pentic_fit_function(x, a, b, c, d, e):
-    return a * (x - )** 4 + b * x ** 3 + c * x ** 2 + d * x + e
+def pentic_fit_function(x, a, b, c, d, e, f, g, h, i):
+    return a * (x - b)** 4 + c * (x - d) ** 3 + e * (x - f) ** 2 + g * (x - h) + i
 
 
 def normalisation_fit(summed_image):
@@ -89,7 +88,7 @@ def interferometry():
     # popt = normalisation_fit(summed_image)
     plt.scatter(np.arange(0, 744), summed_image)
     xvals = np.arange(0, 744)
-    popt, pcov = optimize.curve_fit(pentic_fit_function, np.arange(0, 744), summed_image, p0=[[]])
+    popt, pcov = optimize.curve_fit(pentic_fit_function, np.arange(0, 744), summed_image)
     # plt.plot(xvals, pentic(xvals, popt[0], popt[1], popt[2], popt[3], popt[4]))
     normalisedsummedimage = summed_image
     fringelength = 0.0067*6
