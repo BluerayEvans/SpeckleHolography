@@ -1,7 +1,8 @@
-import os
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import os
 from scipy import optimize
+import pandas as pd
 
 
 def transform_column(imagearray):
@@ -63,41 +64,52 @@ def sin_fit_function(x, a, b, c, d):
     return a * np.sin(b * x + d) + c
 
 
-def pentic_fit_function(x, a, b, c, d, e, f, g, h, i):
-    return a * (x - b)** 4 + c * (x - d) ** 3 + e * (x - f) ** 2 + g * (x - h) + i
-
-
 def normalisation_fit(summed_image):
     popt, pcov = optimize.curve_fit(pentic_fit_function, np.arange(0, 744), summed_image)
     return popt
 
 
-'''def findfringes(normalisedsummedimage, fringelength):
-    params, params_cov = optimize.curve_fit(fit_function, np.arange(0, 744), normalisedsummedimage,
-                                            p0=[max(normalisedsummedimage) - np.mean(normalisedsummedimage), fringelength,
-                                                np.mean(normalisedsummedimage)])
-    
-    plt.plot(np.arange(0, 744), fit_function(vals, params[0], params[1], params[2]))
-    return 1/params[1]'''
-
-def interferometry():
+def moving_average(window_size):
     image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)
     image2 = np.array(plt.imread("Images/Interferometry10/25 090.bmp"), dtype=int)
     subtractionimage = np.abs(image1 - image2)
     summed_image = np.sum(subtractionimage, axis=0)
-    # popt = normalisation_fit(summed_image)
-    plt.scatter(np.arange(0, 744), summed_image)
-    xvals = np.arange(0, 744)
-    popt, pcov = optimize.curve_fit(pentic_fit_function, np.arange(0, 744), summed_image)
-    # plt.plot(xvals, pentic(xvals, popt[0], popt[1], popt[2], popt[3], popt[4]))
-    normalisedsummedimage = summed_image
-    fringelength = 0.0067*6
-    params, params_cov = optimize.curve_fit(sin_fit_function, np.arange(0, 744), normalisedsummedimage,
+    arr = summed_image
+    i = 0
+    moving_averages = []
+    while i < len(arr) - window_size + 1:
+        window_average = round(np.sum(arr[
+                                      i:i + window_size]) / window_size, 2)
+        moving_averages.append(window_average)
+        i += 1
+    return moving_averages
+
+
+def interferometry():
+    window_size = 25
+    moving_averages = moving_average(window_size)
+    image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)
+    deg = 70
+    image2 = np.array(plt.imread("Images/Interferometry10/25 0" + str(deg) + ".bmp"), dtype=int)
+    subtractionimage = np.abs(image1 - image2)
+    summed_image = np.sum(subtractionimage, axis=0)
+    xvals = np.arange(0, 744-(window_size-1))
+    summed_image = summed_image[int(((window_size-1)/2)):-int(((window_size-1)/2))]
+    difference = np.mean(summed_image) - moving_averages
+    normalisedsummedimage = summed_image + difference
+    plt.scatter(xvals, normalisedsummedimage)
+    fft_summed_image = np.abs(np.fft.fft(normalisedsummedimage))
+    frequency = np.abs(np.fft.fftfreq(744))
+    fringelength = 1 / ((frequency[int(deg / 10):372])[np.argmax(np.abs(fft_summed_image[int(deg / 10):372]))])
+    print(fringelength)
+    print(1 / fringelength)
+    guessfrequency = 6 * 1 / fringelength
+    params, params_cov = optimize.curve_fit(sin_fit_function, xvals, normalisedsummedimage,
                                             p0=[max(normalisedsummedimage) - np.mean(normalisedsummedimage),
-                                                fringelength,
+                                                guessfrequency,
                                                 np.mean(normalisedsummedimage), 0])
     print(params[1])
-    plt.plot(xvals, sin_fit_function(xvals, params[0], params[1], params[2], params[3]))
+    plt.plot(xvals, sin_fit_function(xvals, *params))
     plt.show()
     '''fft_summed_image = np.fft.fft(summed_image)
     frequency = abs(np.fft.fftfreq(744))
@@ -110,7 +122,14 @@ def interferometry():
     # toimage(subtractionimage).show()
 
 
+def linear(x, a, b):
+    return a*x+b
+
+
 def wavelengthpermeter():
+    window_size = 9
+    moving_averages = moving_average(window_size)
+    xvals = np.arange(0, 744-(window_size-1))
     numberoffringes = []
     image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)
     frequency = np.abs(np.fft.fftfreq(744))
@@ -119,22 +138,25 @@ def wavelengthpermeter():
         image2 = np.array(plt.imread("Images/Interferometry10/25 0" + str(x) + ".bmp"), dtype=int)
         subtractionimage = np.abs(image1 - image2)
         summed_image = np.sum(subtractionimage, axis=0)
+        summed_image = summed_image[int(((window_size - 1) / 2)):-int(((window_size - 1) / 2))]
         fft_summed_image = np.abs(np.fft.fft(summed_image))
         fringelength = 1 / ((frequency[int(x / 10):372])[np.argmax(np.abs(fft_summed_image[int(x / 10):372]))])
-        print(fringelength)
-        normalisedsummedimage = summed_image
-        print(1/fringelength)
+        difference = np.mean(summed_image) - moving_averages
+        normalisedsummedimage = summed_image + difference
         guessfrequency = 6 * 1/fringelength
-        params, params_cov = optimize.curve_fit(sin_fit_function, np.arange(0, 744), normalisedsummedimage,
+        params, params_cov = optimize.curve_fit(sin_fit_function, xvals, normalisedsummedimage,
                                                 p0=[max(normalisedsummedimage) - np.mean(normalisedsummedimage),
                                                     guessfrequency,
                                                     np.mean(normalisedsummedimage), 0])
-
         numberoffringes.append(744 / (6/params[1]))
     meters_per_degree = 1.167 * 10 ** (-7)
     print(numberoffringes)
+    numberoffringes = np.array(numberoffringes) * 780*10**(-9) * 0.7
     displacement = degrees * meters_per_degree
-    plt.plot(displacement, numberoffringes)
+    plt.scatter(numberoffringes, displacement)
+    popt, pcov = optimize.curve_fit(linear, numberoffringes, displacement)
+    print(popt)
+    plt.plot(numberoffringes, linear(numberoffringes, *popt))
     plt.show()
 
 
@@ -146,6 +168,6 @@ filepath = "Images/Images4/"
 images = os.listdir(filepath)
 
 # practicemain()
-interferometry()
-#wavelengthpermeter()
+#interferometry()
+wavelengthpermeter()
 # widthlist()
