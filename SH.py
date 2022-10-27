@@ -38,7 +38,7 @@ def widthlist():
         width = halfwidth(abs_transformed_column)
         widths.append(width)
     x = np.arange(0, len(images))
-    a, b = np.polyfit(np.delete(x, [1,6,7,8]), np.delete(widths, [1,6,7,8]), 1)
+    a, b = np.polyfit(np.delete(x, [1, 6, 7, 8]), np.delete(widths, [1, 6, 7, 8]), 1)
     plt.scatter(x, widths)
     plt.plot(x, a * x + b)
     plt.title('Aperture circumference vs half width max')
@@ -59,53 +59,84 @@ def practicemain():
     plt.savefig('Plots/absolute.png', bbox_inches='tight')
     plt.show()
 
-def fit_function(x, a, b, c):
-    return a * np.sin(b*x) + c
+
+def fit_function(x, a, b, c, d):
+    return a * np.sin(b * x + d) + c
+
 
 def pentic(x, a, b, c, d, e):
-    return a*x**4 + b*x**3 + c*x**2 + d*x + e
+    return a * x ** 4 + b * x ** 3 + c * x ** 2 + d * x + e
+
 
 def normalisation_fit(summed_image):
     popt, pcov = optimize.curve_fit(pentic, np.arange(0, 744), summed_image)
     return popt
 
+
+'''def findfringes(normalisedsummedimage, fringelength):
+    params, params_cov = optimize.curve_fit(fit_function, np.arange(0, 744), normalisedsummedimage,
+                                            p0=[max(normalisedsummedimage) - np.mean(normalisedsummedimage), fringelength,
+                                                np.mean(normalisedsummedimage)])
+    
+    plt.plot(np.arange(0, 744), fit_function(vals, params[0], params[1], params[2]))
+    return 1/params[1]'''
+
 def interferometry():
     image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)
-    image2 = np.array(plt.imread("Images/Interferometry10/25 080.bmp"), dtype=int)
+    image2 = np.array(plt.imread("Images/Interferometry10/25 030.bmp"), dtype=int)
     subtractionimage = np.abs(image1 - image2)
     summed_image = np.sum(subtractionimage, axis=0)
-    popt = normalisation_fit(summed_image)
+    # popt = normalisation_fit(summed_image)
     plt.scatter(np.arange(0, 744), summed_image)
-    xvals = np.arange(0,744)
-    plt.plot(xvals, pentic(xvals, popt[0], popt[1], popt[2], popt[3], popt[4]))
+    xvals = np.arange(0, 744)
+    # plt.plot(xvals, pentic(xvals, popt[0], popt[1], popt[2], popt[3], popt[4]))
+    normalisedsummedimage = summed_image
+    fringelength = 0.0067*6
+    params, params_cov = optimize.curve_fit(fit_function, np.arange(0, 744), normalisedsummedimage,
+                                            p0=[max(normalisedsummedimage) - np.mean(normalisedsummedimage),
+                                                fringelength,
+                                                np.mean(normalisedsummedimage), 0])
+    print(params[1])
+    plt.plot(xvals, fit_function(xvals, params[0], params[1], params[2], params[3]))
     plt.show()
-    fft_summed_image = np.fft.fft(summed_image)
+    '''fft_summed_image = np.fft.fft(summed_image)
     frequency = abs(np.fft.fftfreq(744))
     plt.plot(frequency[12:], abs(fft_summed_image)[12:])
     plt.title('Fourier transform of summed fringes')
     plt.ylabel('Intensity correlation')
     plt.xlabel('Spatial frequency (px^-1)')
     plt.xlim(0, 0.05)
-    plt.show()
-    toimage(subtractionimage).show()
+    plt.show()'''
+    # toimage(subtractionimage).show()
+
 
 def wavelengthpermeter():
     numberoffringes = []
     image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)
     frequency = np.abs(np.fft.fftfreq(744))
-    degrees = np.arange(1, 9)*10
+    degrees = np.arange(1, 9) * 10
     for x in degrees:
         image2 = np.array(plt.imread("Images/Interferometry10/25 0" + str(x) + ".bmp"), dtype=int)
         subtractionimage = np.abs(image1 - image2)
         summed_image = np.sum(subtractionimage, axis=0)
         fft_summed_image = np.abs(np.fft.fft(summed_image))
-        fringelength = 1/((frequency[int(x/10):372])[np.argmax(np.abs(fft_summed_image[int(x/10):372]))])
-        numberoffringes.append(744/fringelength)
-    meters_per_degree = 1.167*10**(-7)
+        fringelength = 1 / ((frequency[int(x / 10):372])[np.argmax(np.abs(fft_summed_image[int(x / 10):372]))])
+        print(fringelength)
+        normalisedsummedimage = summed_image
+        print(1/fringelength)
+        guessfrequency = 6 * 1/fringelength
+        params, params_cov = optimize.curve_fit(fit_function, np.arange(0, 744), normalisedsummedimage,
+                                                p0=[max(normalisedsummedimage) - np.mean(normalisedsummedimage),
+                                                    guessfrequency,
+                                                    np.mean(normalisedsummedimage), 0])
+
+        numberoffringes.append(744 / (6/params[1]))
+    meters_per_degree = 1.167 * 10 ** (-7)
     print(numberoffringes)
     displacement = degrees * meters_per_degree
     plt.plot(displacement, numberoffringes)
     plt.show()
+
 
 circumference = '6'
 total_values = 739
