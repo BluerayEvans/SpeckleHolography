@@ -15,9 +15,13 @@ def transform_column(imagearray):
     return abs_transformed_column
 
 
+def gaussian(x, a, b, c):
+    return a * np.exp(-(((x - b) ** 2) / (2 * c ** 2)))
+
+
 def halfwidth(fouriertransform):
     """returns the width of the peak"""
-    halfmax = max(fouriertransform) / 2
+    halfmax = max(fouriertransform) / 2.35
     for x in range(0, len(fouriertransform) - 1):
         if fouriertransform[x] >= halfmax:
             left = xvalues[x]
@@ -32,31 +36,35 @@ def halfwidth(fouriertransform):
 def widthlist():
     """generates list of widths of fourier transform"""
     widths = []
-    for x in images:
-        imagearray = plt.imread(filepath + x)  # imports the image
+    for y in images:
+        imagearray = np.array(plt.imread(filepath + y), dtype=int)  # imports the image
         abs_transformed_column = transform_column(imagearray)
         width = halfwidth(abs_transformed_column)
         widths.append(width)
     x = np.arange(0, len(images))
-    a, b = np.polyfit(np.delete(x, [1, 6, 7, 8]), np.delete(widths, [1, 6, 7, 8]), 1)
-    plt.scatter(x, widths)
-    plt.plot(x, a * x + b)
+    a, b = np.polyfit(x[1:-3], widths[1:-3], 1)
+    widths = np.array(widths)
+    plt.errorbar(x[1:-1] + 5, widths[1:-1], xerr=0.5, yerr=(widths[1:-1]*0.05), fmt='.k')
+    plt.plot(x[1:-1] + 5, a * x[1:-1] + b, color='red')
     plt.title('Aperture circumference vs half width max')
     plt.xlabel('Aperture circumference (mm)')
     plt.ylabel('Half width max (k value)')
-    plt.ylim(0, 0.2)
+    plt.savefig('Plots/aperturecirchalfwidth.png', bbox_inches='tight')
     plt.show()
     return widths
 
 
 def practicemain():
-    imagearray = plt.imread(filepath + images[-2])  # imports the image
+    num = 5
+    imagearray = np.array(plt.imread(filepath + images[num]), dtype=int)  # imports the image
     abs_transformed_column = transform_column(imagearray)
-    plt.plot(xvalues[int(deletion * 2 - 1):], abs_transformed_column)
-    plt.title('F.T. of the image data for circumference: ' + images[-2])
+    #params, pcov = optimize.curve_fit(gaussian, xvalues[int(deletion * 2 - 1):], abs_transformed_column, p0=[60000, 0, 0.1])
+    plt.errorbar(xvalues[int(deletion * 2 - 1):], abs_transformed_column, fmt='.k')
+    #plt.plot(xvalues[int(deletion * 2 - 1):], gaussian(xvalues[int(deletion * 2 - 1):], *params))
+    plt.title('F.T. of the image data for circumference: ' + str(num+5) + 'mm')
     plt.xlabel('k value')
     plt.ylabel('Summed intensity along column')
-    plt.savefig('Plots/absolute.png', bbox_inches='tight')
+    plt.savefig('Plots/FT' + str(num+5) + '.png', bbox_inches='tight')
     plt.show()
 
 
@@ -93,8 +101,8 @@ def interferometry():
     image2 = np.array(plt.imread("Images/Interferometry10/25 0" + str(deg) + ".bmp"), dtype=int)
     subtractionimage = np.abs(image1 - image2)
     summed_image = np.sum(subtractionimage, axis=0)
-    xvals = np.arange(0, 744-(window_size-1))
-    summed_image = summed_image[int(((window_size-1)/2)):-int(((window_size-1)/2))]
+    xvals = np.arange(0, 744 - (window_size - 1))
+    summed_image = summed_image[int(((window_size - 1) / 2)):-int(((window_size - 1) / 2))]
     difference = np.mean(summed_image) - moving_averages
     normalisedsummedimage = summed_image + difference
     plt.scatter(xvals, normalisedsummedimage)
@@ -123,15 +131,15 @@ def interferometry():
 
 
 def linear(x, a, b):
-    return a*x+b
+    return a * x + b
 
 
 def wavelengthpermeter():
-    window_size = 9
-    moving_averages = moving_average(window_size)
-    xvals = np.arange(0, 744-(window_size-1))
+    window_size = 11  # how many values the moving average uses
+    moving_averages = moving_average(window_size)  # finding the values to remove the general trend fluctuations
+    xvals = np.arange(0, 744 - (window_size - 1))  # setting number of pixels accounting for the loss from moving avg
     numberoffringes = []
-    image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)
+    image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)  # importing reference
     frequency = np.abs(np.fft.fftfreq(744))
     degrees = np.arange(1, 9) * 10
     for x in degrees:
@@ -143,20 +151,31 @@ def wavelengthpermeter():
         fringelength = 1 / ((frequency[int(x / 10):372])[np.argmax(np.abs(fft_summed_image[int(x / 10):372]))])
         difference = np.mean(summed_image) - moving_averages
         normalisedsummedimage = summed_image + difference
-        guessfrequency = 6 * 1/fringelength
+        guessfrequency = 6 / (fringelength)
         params, params_cov = optimize.curve_fit(sin_fit_function, xvals, normalisedsummedimage,
                                                 p0=[max(normalisedsummedimage) - np.mean(normalisedsummedimage),
                                                     guessfrequency,
-                                                    np.mean(normalisedsummedimage), 0])
-        numberoffringes.append(744 / (6/params[1]))
+                                                    np.mean(normalisedsummedimage), 0],
+                                                sigma=((normalisedsummedimage / normalisedsummedimage) * 480))
+        numberoffringes.append(744 / (6 / params[1]))
+        error_on_wavenumber = np.sqrt(np.diag(params_cov))[1]
     meters_per_degree = 1.167 * 10 ** (-7)
     print(numberoffringes)
-    numberoffringes = np.array(numberoffringes) * 780*10**(-9) * 0.7
+    wavelength = 780 * 10 ** (-9)
+    laser_measured_displacement = np.array(numberoffringes) * wavelength
+    error_on_number_of_fringes = error_on_wavenumber * 744 / 6
+    error_laser_measured_displacement = error_on_number_of_fringes * wavelength * 0.2
     displacement = degrees * meters_per_degree
-    plt.scatter(numberoffringes, displacement)
-    popt, pcov = optimize.curve_fit(linear, numberoffringes, displacement)
+    popt, pcov = optimize.curve_fit(linear, laser_measured_displacement, displacement)
     print(popt)
-    plt.plot(numberoffringes, linear(numberoffringes, *popt))
+    error_on_y = displacement * 0.3
+    error_on_x = displacement * 0.3
+    plt.errorbar(laser_measured_displacement, displacement, xerr=error_laser_measured_displacement, yerr=error_on_y,
+                 fmt='.k')
+    plt.plot(laser_measured_displacement, laser_measured_displacement, c='red')
+    plt.title('Laser measured displacement vs screw measured displacement')
+    plt.xlabel('Laser calculated displacement (m)')
+    plt.ylabel('Screw measured displacement (m)')
     plt.show()
 
 
@@ -167,7 +186,7 @@ deletion = 3
 filepath = "Images/Images4/"
 images = os.listdir(filepath)
 
-# practicemain()
-#interferometry()
-wavelengthpermeter()
-# widthlist()
+practicemain()
+# interferometry()
+# wavelengthpermeter()
+widthlist()
