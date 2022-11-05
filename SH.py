@@ -78,6 +78,9 @@ def normalisation_fit(summed_image):
 
 
 def moving_average(window_size):
+    """Calculates moving average of subtraction of 2 images for specified window size. Code based on Method 1 :
+    https://www.geeksforgeeks.org/how-to-calculate-moving-averages-in-python/#:~:text=set%20of%20observations-,
+    Method%201%3A%20Using%20Numpy,elements%20of%20the%20given%20array. """
     image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)
     image2 = np.array(plt.imread("Images/Interferometry10/25 090.bmp"), dtype=int)
     subtractionimage = np.abs(image1 - image2)
@@ -97,7 +100,7 @@ def interferometry():
     window_size = 25
     moving_averages = moving_average(window_size)
     image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)
-    deg = 70
+    deg = 50
     image2 = np.array(plt.imread("Images/Interferometry10/25 0" + str(deg) + ".bmp"), dtype=int)
     subtractionimage = np.abs(image1 - image2)
     summed_image = np.sum(subtractionimage, axis=0)
@@ -105,7 +108,7 @@ def interferometry():
     summed_image = summed_image[int(((window_size - 1) / 2)):-int(((window_size - 1) / 2))]
     difference = np.mean(summed_image) - moving_averages
     normalisedsummedimage = summed_image + difference
-    plt.scatter(xvals, normalisedsummedimage)
+    plt.errorbar(xvals, normalisedsummedimage, fmt='.k')
     fft_summed_image = np.abs(np.fft.fft(normalisedsummedimage))
     frequency = np.abs(np.fft.fftfreq(744))
     fringelength = 1 / ((frequency[int(deg / 10):372])[np.argmax(np.abs(fft_summed_image[int(deg / 10):372]))])
@@ -117,16 +120,21 @@ def interferometry():
                                                 guessfrequency,
                                                 np.mean(normalisedsummedimage), 0])
     print(params[1])
-    plt.plot(xvals, sin_fit_function(xvals, *params))
+    #plt.plot(xvals, sin_fit_function(xvals, *params))
+    plt.title('Intensity values for ' + str(deg) + ' degree turn')
+    plt.xlabel('Column of image')
+    plt.ylabel('Summed intensity value')
+    plt.savefig('Plots/intensityfringebias')
     plt.show()
-    '''fft_summed_image = np.fft.fft(summed_image)
+    fft_summed_image = np.fft.fft(np.sum(subtractionimage, axis=0))
     frequency = abs(np.fft.fftfreq(744))
     plt.plot(frequency[12:], abs(fft_summed_image)[12:])
     plt.title('Fourier transform of summed fringes')
     plt.ylabel('Intensity correlation')
     plt.xlabel('Spatial frequency (px^-1)')
     plt.xlim(0, 0.05)
-    plt.show()'''
+    plt.savefig('Plots/FToffringe.png')
+    plt.show()
     # toimage(subtractionimage).show()
 
 
@@ -135,7 +143,7 @@ def linear(x, a, b):
 
 
 def wavelengthpermeter():
-    window_size = 11  # how many values the moving average uses
+    window_size = 25  # how many values the moving average uses
     moving_averages = moving_average(window_size)  # finding the values to remove the general trend fluctuations
     xvals = np.arange(0, 744 - (window_size - 1))  # setting number of pixels accounting for the loss from moving avg
     numberoffringes = []
@@ -151,7 +159,7 @@ def wavelengthpermeter():
         fringelength = 1 / ((frequency[int(x / 10):372])[np.argmax(np.abs(fft_summed_image[int(x / 10):372]))])
         difference = np.mean(summed_image) - moving_averages
         normalisedsummedimage = summed_image + difference
-        guessfrequency = 6 / (fringelength)
+        guessfrequency = 6 / fringelength
         params, params_cov = optimize.curve_fit(sin_fit_function, xvals, normalisedsummedimage,
                                                 p0=[max(normalisedsummedimage) - np.mean(normalisedsummedimage),
                                                     guessfrequency,
@@ -162,20 +170,24 @@ def wavelengthpermeter():
     meters_per_degree = 1.167 * 10 ** (-7)
     print(numberoffringes)
     wavelength = 780 * 10 ** (-9)
-    laser_measured_displacement = np.array(numberoffringes) * wavelength
+    laser_measured_displacement = np.array(numberoffringes) * wavelength * 0.75833333
     error_on_number_of_fringes = error_on_wavenumber * 744 / 6
     error_laser_measured_displacement = error_on_number_of_fringes * wavelength * 0.2
     displacement = degrees * meters_per_degree
-    popt, pcov = optimize.curve_fit(linear, laser_measured_displacement, displacement)
+    error_on_y = displacement * 0.2
+    popt, pcov = optimize.curve_fit(linear, laser_measured_displacement, displacement, sigma=error_on_y)
     print(popt)
-    error_on_y = displacement * 0.3
-    error_on_x = displacement * 0.3
+    print(pcov)
     plt.errorbar(laser_measured_displacement, displacement, xerr=error_laser_measured_displacement, yerr=error_on_y,
                  fmt='.k')
-    plt.plot(laser_measured_displacement, laser_measured_displacement, c='red')
+    plt.plot([0, 9*10**(-6)], [0, 9*10**(-6)], c='red', label='gradient 1')
+    plt.plot(laser_measured_displacement, linear(laser_measured_displacement, *popt), label='Fit to data')
+    plt.legend(loc='upper left')
     plt.title('Laser measured displacement vs screw measured displacement')
     plt.xlabel('Laser calculated displacement (m)')
     plt.ylabel('Screw measured displacement (m)')
+
+    plt.savefig('Plots/fixedfinal')
     plt.show()
 
 
@@ -186,7 +198,7 @@ deletion = 3
 filepath = "Images/Images4/"
 images = os.listdir(filepath)
 
-practicemain()
-# interferometry()
-# wavelengthpermeter()
-widthlist()
+#practicemain()
+interferometry()
+wavelengthpermeter()
+#widthlist()
