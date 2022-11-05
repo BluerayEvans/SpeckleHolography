@@ -55,6 +55,7 @@ def widthlist():
 
 
 def practicemain():
+    """preliminary experiment"""
     num = 5
     imagearray = np.array(plt.imread(filepath + images[num]), dtype=int)  # imports the image
     abs_transformed_column = transform_column(imagearray)
@@ -97,6 +98,7 @@ def moving_average(window_size):
 
 
 def interferometry():
+    """function to test individual displacements"""
     window_size = 25
     moving_averages = moving_average(window_size)
     image1 = np.array(plt.imread("Images/Interferometry10/25 000.bmp"), dtype=int)
@@ -143,6 +145,7 @@ def linear(x, a, b):
 
 
 def wavelengthpermeter():
+    """function to calculate the displacement from the speckle and compare to the displacement from the screw"""
     window_size = 25  # how many values the moving average uses
     moving_averages = moving_average(window_size)  # finding the values to remove the general trend fluctuations
     xvals = np.arange(0, 744 - (window_size - 1))  # setting number of pixels accounting for the loss from moving avg
